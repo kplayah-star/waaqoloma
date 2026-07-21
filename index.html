@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="description" content="WAAQOLOMA — xogta la diiwaangeliyey ee dadka caanka ah iyo shakhsiyaadka taariikhiga ah.">
   <title>WAAQOLOMA — RAADI</title>
   <style>
@@ -31,7 +34,7 @@
       <h1 id="brand">WAAQOLOMA</h1>
       <p class="tagline">OGOW QABIILKIISA / QABIILKEEDA</p>
       <form class="search" id="searchForm">
-        <input id="query" autocomplete="off" placeholder="Geli magaca qofka caanka ah" aria-label="Magaca qofka caanka ah" required>
+        <input id="query" autocomplete="off" inputmode="search" maxlength="120" placeholder="Geli magaca qofka caanka ah" aria-label="Magaca qofka caanka ah" required>
         <button type="submit">RAADI</button>
       </form>
       <p class="hint">Ku raadi magaca buuxa ee qof caan ah ama qof taariikhi ah.</p>
@@ -43,14 +46,16 @@
     <p><strong>English:</strong> WAAQOLOMA is a public reference site for notable and historical figures. Information is based on public sources, interviews, historical records and submitted evidence. Clan affiliations may be disputed, incomplete or subject to correction. Please submit a correction request if you believe information is inaccurate.</p>
     <p class="motto">RUNTA RAADSO, XOGTA XAQIIJI.</p>
   </footer>
-  <dialog id="correctionDialog"><form class="modal" id="correctionForm" method="dialog"><h2>Soo gudbi sixid / Submit a correction</h2><p class="source">Fariinta tijaabadan waxay ku kaydsan tahay qalabkaaga oo keliya ilaa keydka xogta onlaynka ah lagu xiro.</p><label for="person">Magaca qofka</label><input id="person" required><label for="evidence">Sixidda iyo caddeynta / Correction and evidence</label><textarea id="evidence" required placeholder="Ku dar xiriirka isha haddii ay suurtagal tahay..."></textarea><div class="actions"><button class="secondary" type="button" id="cancel">Ka noqo</button><button type="submit">DIR DIB-U-EEGIS</button></div></form></dialog>
+  <dialog id="correctionDialog"><form class="modal" id="correctionForm" method="dialog"><h2>Soo gudbi sixid / Submit a correction</h2><p class="source">Sanduuqa sixitaanka ee amniga leh weli lama xirin. Wax xog ah laguma kaydin doono qalabkaaga ama laguma diri doono ilaa nidaamka gaarka ah diyaar noqdo.</p><label for="person">Magaca qofka</label><input id="person" maxlength="120" autocomplete="off" required><label for="evidence">Sixidda iyo caddeynta / Correction and evidence</label><textarea id="evidence" maxlength="3000" required placeholder="Ku dar xiriirka isha haddii ay suurtagal tahay..."></textarea><div class="actions"><button class="secondary" type="button" id="cancel">Ka noqo</button><button type="submit">DIR DIB-U-EEGIS</button></div></form></dialog>
   <script>
     const people=[{name:'Tusaale Qof Caan ah',profession:'Qof dadweyne (tusaale)',country:'Soomaaliya',clan:'Xog tijaabo ah',subclan:'Lama daabicin',status:'Tusaale / Demo',source:'Diiwaankan waa tusaale oo ma matalo qof dhab ah.'}];
     const form=document.querySelector('#searchForm'),query=document.querySelector('#query'),result=document.querySelector('#result'),dialog=document.querySelector('#correctionDialog');
-    const clean=s=>s.trim().toLocaleLowerCase();
-    form.addEventListener('submit',e=>{e.preventDefault();const person=people.find(p=>clean(p.name)===clean(query.value));result.classList.remove('hidden');if(!person){result.innerHTML=`<div class="empty"><h2>Qofkan lama helin</h2><p>Hubi higgaadda magaca buuxa. Diiwaanka tijaabadu wuxuu hadda leeyahay: <strong>Tusaale Qof Caan ah</strong>.</p><button class="link-button" onclick="openCorrection()">Soo gudbi sixid ama faallo</button></div>`;return;}result.innerHTML=`<span class="status">${person.status}</span><h2>${person.name}</h2><dl><dt>Xirfad</dt><dd>${person.profession}</dd><dt>Dal</dt><dd>${person.country}</dd><dt>Qabiil</dt><dd>${person.clan}</dd><dt>Jilib</dt><dd>${person.subclan}</dd></dl><p class="source"><strong>Isha:</strong> ${person.source}</p><button class="link-button" onclick="openCorrection('${person.name}')">Xog khaldan? Soo gudbi sixid</button>`});
-    window.openCorrection=(name='')=>{document.querySelector('#person').value=name||query.value;dialog.showModal()};document.querySelector('#cancel').onclick=()=>dialog.close();
-    document.querySelector('#correctionForm').addEventListener('submit',e=>{const items=JSON.parse(localStorage.getItem('waaqoloma-corrections')||'[]');items.push({person:document.querySelector('#person').value,evidence:document.querySelector('#evidence').value,date:new Date().toISOString()});localStorage.setItem('waaqoloma-corrections',JSON.stringify(items));setTimeout(()=>alert('Waad mahadsan tahay. Codsigaaga dib-u-eegis ayaa la kaydiyey qalabkan.'),50)});
+    const clean=s=>String(s).trim().normalize('NFKC').toLocaleLowerCase('so').slice(0,120);
+    const add=(parent,tag,text,className)=>{const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;parent.append(node);return node};
+    const correctionButton=(name='')=>{const button=add(result,'button',name?'Xog khaldan? Soo gudbi sixid':'Soo gudbi sixid ama faallo','link-button');button.type='button';button.addEventListener('click',()=>openCorrection(name));};
+    form.addEventListener('submit',e=>{e.preventDefault();result.replaceChildren();const person=people.find(p=>clean(p.name)===clean(query.value));result.classList.remove('hidden');if(!person){const box=add(result,'div','','empty');add(box,'h2','Qofkan lama helin');add(box,'p','Hubi higgaadda magaca buuxa. Diiwaanka tijaabadu wuxuu hadda leeyahay: Tusaale Qof Caan ah.');correctionButton();return;}add(result,'span',person.status,'status');add(result,'h2',person.name);const list=document.createElement('dl');[['Xirfad',person.profession],['Dal',person.country],['Qabiil',person.clan],['Jilib',person.subclan]].forEach(([label,value])=>{add(list,'dt',label);add(list,'dd',value)});result.append(list);const source=add(result,'p','','source');add(source,'strong','Isha: ');source.append(document.createTextNode(person.source));correctionButton(person.name)});
+    const openCorrection=(name='')=>{document.querySelector('#person').value=clean(name||query.value);dialog.showModal()};document.querySelector('#cancel').addEventListener('click',()=>dialog.close());
+    document.querySelector('#correctionForm').addEventListener('submit',e=>{e.preventDefault();alert('Nidaamka sixitaanka ee amniga leh weli lama xirin. Wax xog ah lama kaydin, fadlan mar kale isku day marka sanduuqa gaarka ahi diyaar noqdo.');dialog.close()});
   </script>
 </body>
 </html>
